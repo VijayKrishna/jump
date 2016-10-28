@@ -115,7 +115,9 @@ public class Graph<G> {
   }
 
   public Graph<G> nowHas(Node<G> node) {
-    if(node == null || this.contains(node.getLabel())) return this;
+    if(node == null || this.contains(node.getLabel())) 
+      return this;
+    
     this.nodes.put(node.getLabel(), node);
     return this;
   }
@@ -202,27 +204,27 @@ public class Graph<G> {
     return reversedGraph;
   }
   
-      private Graph<G> createGraphScaffold() {
-        Graph<G> scaffold = Graph.<G>create();
-        // 1. Create a new empty arraylist
-        scaffold.nodes = new HashMap<String, Node<G>>();
-        // 2. Copy the nodes of the original graph into the arraylist
-        for(Node<G> node : this.nodes.values()) {
-          // 1. the constructor creates bare nodes with just the labels no succs
-          Node<G> newNode = Node.<G>create(node.getLabel(), scaffold);
-          // 2. Add the newly created node in the array.
-          scaffold.nodes.put(node.getLabel(), newNode);
-        }
-        // "matching label": the string that matches the label of the original node
-        // 3. point the root of the new Graph object to a node in the node list of the new 
-        // Graph, for a node that has a matching label.
-        //      Node origGraph_root_succ = origGraph.startNode.getSuccessor(0);
-        //      Node newGraph_root_succ = this.getNode(origGraph_root_succ.label);
-        //      this.startNode.addSuccessors(newGraph_root_succ);
-        scaffold.endNode = scaffold.node(END);
-        scaffold.startNode = scaffold.node(START);
-        return scaffold;
-      }
+  public Graph<G> createGraphScaffold() {
+    Graph<G> scaffold = Graph.<G>create();
+    // 1. Create a new empty arraylist
+    scaffold.nodes = new HashMap<String, Node<G>>();
+    // 2. Copy the nodes of the original graph into the arraylist
+    for(Node<G> node : this.nodes.values()) {
+      // 1. the constructor creates bare nodes with just the labels no succs
+      Node<G> newNode = Node.<G>create(node.getLabel(), scaffold);
+      // 2. Add the newly created node in the array.
+      scaffold.nodes.put(node.getLabel(), newNode);
+    }
+    // "matching label": the string that matches the label of the original node
+    // 3. point the root of the new Graph object to a node in the node list of the new 
+    // Graph, for a node that has a matching label.
+    //      Node origGraph_root_succ = origGraph.startNode.getSuccessor(0);
+    //      Node newGraph_root_succ = this.getNode(origGraph_root_succ.label);
+    //      this.startNode.addSuccessors(newGraph_root_succ);
+    scaffold.endNode = scaffold.node(END);
+    scaffold.startNode = scaffold.node(START);
+    return scaffold;
+  }
 
   /**
    * @param label

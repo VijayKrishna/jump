@@ -65,7 +65,6 @@ public class LcaTest {
   }
 
   @Test
-  @Ignore
   public void shouldThrow_NoExceptions_With_Treeless_NonNull_Nodes() {
     //given
     Node<Integer> n1 = Node.create("node1", null);
@@ -127,23 +126,20 @@ public class LcaTest {
   public void shouldReturnRootWith_UnbalancedTree() {
     //given
     Graph<Integer> tree = Graph.create();
-    @SuppressWarnings("unchecked")
-    Node<Integer>[] nodes = new Node[] {
-        Node.create("n1", tree),
-        Node.create("n2", tree),
-        Node.create("n3", tree),
-        Node.create("n4", tree),
-        Node.create("n5", tree)};
-    tree.nowHas(Accumulator.<Integer>create().with(nodes));
+    
+    Node<Integer> n1 = Node.create("n1", tree);
+    Node<Integer> n2 = Node.create("n2", tree);
+    Node<Integer> n3 =Node.create("n3", tree);
+    Node<Integer> n4 =Node.create("n4", tree);
+    Node<Integer> n5 =Node.create("n5", tree);
+    
+    tree.nowHas(n1.and(n2).and(n3).and(n4).and(n5));
     // ...and
-    tree.startNode().pointsTo(nodes[0]);
-    tree.startNode().pointsTo(nodes[1]);
-    nodes[1].pointsTo(nodes[2]);
-    nodes[2].pointsTo(nodes[3]);
-    nodes[3].pointsTo(nodes[4]);
+    tree.startNode().pointsTo(n1);
+    tree.startNode().pointsTo(n2.pointsTo(n3.pointsTo(n4.pointsTo(n5))));
     
     // when
-    Node<Integer> lca = Algorithms.lowestCommonAncestor(nodes[4], nodes[0]);
+    Node<Integer> lca = Algorithms.lowestCommonAncestor(n5, n1);
 
     // then
     assertEquals(tree.startNode(), lca);

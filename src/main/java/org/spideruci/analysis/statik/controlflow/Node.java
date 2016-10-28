@@ -6,6 +6,8 @@ import java.util.LinkedHashSet;
 
 import org.spideruci.analysis.util.caryatid.Helper;
 
+import com.google.common.base.Preconditions;
+
 public class Node<T> {
   /**
    * Nodes being pointed to by this node.
@@ -57,15 +59,24 @@ public class Node<T> {
   }
   
   public Node<T> clearSuccessors() {
-    if(this.successors == null) return this;
+    if(this.successors == null) 
+      return this;
+    
     for(Node<T> succ : this.successors) {
-      succ.predecessors.remove(succ);
+      succ.predecessors.remove(this);
     }
     this.successors.clear();
     return this;
   }
   
   public Node<T> clearPredecessors() {
+    if(this.predecessors == null)
+      return this;
+    
+    for(Node<T> pred : this.predecessors) {
+      pred.successors.remove(this);
+    }
+    
     this.predecessors.clear();
     return this;
   }
@@ -103,6 +114,23 @@ public class Node<T> {
     if(predecessors == null) return Helper.Collections2.emptyArrayList();
     ArrayList<Node<T>> preds = new ArrayList<Node<T>>(predecessors);
     return preds;
+  }
+  
+  /**
+   * Assumes that this node is part of a TREE and not a GRAPH,
+   * i.e. the node has at most one predecessor, and not more 
+   * than one. If it has zero predecessor, then it is a root 
+   * node of this tree.
+   * @return 
+   * parent of this node; <br>
+   * null if this node has no parent;
+   */
+  public Node<T> getParentInTree() {
+    ArrayList<Node<T>> preds = this.getPredecessors();
+    Preconditions.checkState(preds.size() <= 1);
+    
+    Node<T> pred = preds.isEmpty() ? null : preds.get(0);
+    return pred;
   }
 
   public int getPredecessorsSize() {
@@ -170,13 +198,23 @@ public class Node<T> {
   }
 
   @Override
-  public boolean equals(Object node) {
-    if(!(node instanceof Node<?>)) {
+  public boolean equals(Object obj) {
+    if(!(obj instanceof Node<?>)) {
       return false;
     }
-    if(((Node<?>)node).getLabel().equals(label)) {
+    
+    if(obj == this) {
       return true;
     }
+    
+    @SuppressWarnings("unchecked")
+    Node<T> node = (Node<T>)obj; 
+    
+    if(node.getLabel().equals(label)
+        && node.containerGraph.uid() == this.containerGraph.uid()) {
+      return true;
+    }
+    
     return false;
   }
 

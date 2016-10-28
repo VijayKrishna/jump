@@ -6,9 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Stack;
-import java.util.function.Function;
 import com.google.common.base.Preconditions;
 
 public class Algorithms {
@@ -47,6 +48,7 @@ public class Algorithms {
       for(Node<T> item : top.pointsTo()) {
         if(!visited.contains(item)) {
           unvisitedNeighbour = item;
+          break;
         }
       }
       
@@ -63,10 +65,250 @@ public class Algorithms {
   }
   
   public static <T> ArrayList<Node<T>> reverseTraversalOrder(ArrayList<Node<T>> trav) {
-    if(trav == null || trav.isEmpty()) return emptyArrayList();
+    if(trav == null || trav.isEmpty()) 
+      return emptyArrayList();
+    
     ArrayList<Node<T>> revTrav = new ArrayList<>(trav);
     Collections.reverse(revTrav);
     return revTrav;
+  }
+  
+  public static <T> ArrayList<Node<T>> traverseBfs(Graph<T> graph) {
+    ArrayList<Node<T>> bfsTraversal = new ArrayList<>();
+    
+    LinkedList<Node<T>> qu = new LinkedList<>();
+    qu.addLast(graph.startNode());
+    
+    while(!qu.isEmpty()) {
+      Node<T> front = qu.removeFirst();
+      
+      if(front == null)
+        continue;
+      
+      bfsTraversal.add(front);
+      
+      ArrayList<Node<T>> succs = front.pointsTo();
+      
+      for(Node<T> succ : succs) {
+        if(bfsTraversal.contains(succ))
+          continue;
+        
+        qu.addLast(succ);
+      }
+    }
+    
+    return bfsTraversal;
+  }
+  
+  public static <T> ArrayList<Node<T>> traverseDfs(Graph<T> graph) {
+    ArrayList<Node<T>> dfsTraversal = new ArrayList<>();
+    
+    Stack<Node<T>> stack = new Stack<>();
+    stack.push(graph.startNode());
+    
+    while(!stack.isEmpty()) {
+      Node<T> popped = stack.pop();
+      
+      if(popped == null)
+        continue;
+      
+      dfsTraversal.add(popped);
+      
+      ArrayList<Node<T>> succs = popped.pointsTo();
+      
+      for(Node<T> succ : succs) {
+        if(dfsTraversal.contains(succ))
+          continue;
+        
+        stack.push(succ);
+      }
+    }
+    
+    return dfsTraversal;
+  }
+  
+  public static <T> ArrayList<Node<T>> traverseReversePostOrder(Graph<T> graph) {
+    Graph<T> spanningTree = getDfsSpanningTree(graph);
+    return traverseBfs(spanningTree);
+  }
+  
+  public static <T> Graph<T> getDfsSpanningTree(Graph<T> flowGraph) {
+    validateGraph(flowGraph);
+    
+    Graph<T> tree = Graph.createEmptyGraph();
+    
+    Stack<Node<T>> stack = new Stack<>();
+    stack.push(flowGraph.startNode());
+    
+    while(!stack.isEmpty()) {
+      Node<T> popped = stack.pop();
+      if(popped == null)
+        continue;
+      
+      final String poppedLabel = popped.getLabel();
+      
+      Node<T> poppedInTree = null;
+      if(tree.contains(poppedLabel)) {
+        poppedInTree = tree.node(poppedLabel);
+      } else {
+        poppedInTree = Node.create(poppedLabel, tree);
+        tree.nowHas(poppedInTree);
+      }
+
+      ArrayList<Node<T>> succs = popped.pointsTo();
+      for(Node<T> succ : succs) {
+        final String succLabel = succ.getLabel();
+        
+        if(tree.contains(succLabel)) {
+          continue;
+        }
+        
+        Node<T> succInTree = Node.create(succLabel, tree);
+        tree.nowHas(succInTree);
+        poppedInTree.pointsTo(succInTree);
+//        succInTree.po
+        
+        stack.push(succ);
+      }
+      
+    }
+    
+    return tree;
+  }
+  
+  public static <T> HashMap<Node<T>, Node<T>> getStronglyConnectedComponents(Graph<T> flowGraph) {
+    validateGraph(flowGraph);
+    
+    Node<T> start = flowGraph.startNode();
+    ArrayList<Node<T>> postOrderTraversal = traversePostOrder(start);
+    
+    HashMap<Node<T>, Node<T>> ringleaders = new HashMap<>();
+    
+    for(int i = postOrderTraversal.size() - 1; i >= 0; i -= 1) {
+      Node<T> leader = postOrderTraversal.get(i);
+      if(ringleaders.get(leader) != null) {
+        continue;
+      }
+      
+      Stack<Node<T>> stack = new Stack<>();
+      stack.push(leader);
+      while(!stack.isEmpty()) {
+        Node<T> popped = stack.pop();
+        if(popped == null) {
+          continue;
+        }
+        
+        if(ringleaders.get(popped) == null) {
+          ringleaders.put(popped, leader);
+        }
+        
+        ArrayList<Node<T>> preds = popped.getPredecessors();
+        for(Node<T> pred : preds) {
+          if(ringleaders.get(pred) == null) {
+            stack.push(pred);
+          }
+        }
+        
+      }
+    }
+    
+    return ringleaders;
+  }
+  
+  /**
+   * 
+   * @param flowGraph
+   * @return dictionary of nodes, mapped to their leaders for all the 
+   * identified strongly connected components.
+   */
+  public static <T> HashMap<Node<T>, Node<T>> collapseStrongComponents(Graph<T> flowGraph) {
+    validateGraph(flowGraph);
+    
+    HashMap<Node<T>, Node<T>> ringleaders = 
+        getStronglyConnectedComponents(flowGraph);
+    
+    for(Node<T> node : ringleaders.keySet()) {
+      Node<T> leader = ringleaders.get(node);
+      if(node == leader) {
+        continue;
+      }
+
+      ArrayList<Node<T>> succs = node.pointsTo();
+      for(Node<T> succ : succs) {
+        if(succ == null) 
+          continue;
+        Node<T> succLeader = ringleaders.get(succ);
+
+        if(succLeader == leader)
+          continue;
+
+        if(!leader.containsSuccessor(succLeader.getLabel())) {
+          leader.pointsTo(succLeader);
+        }
+      }
+      
+      ArrayList<Node<T>> preds = node.getPredecessors();
+      for(Node<T> pred : preds) {
+        if(pred == null) 
+          continue;
+        
+        Node<T> predLeader = ringleaders.get(pred);
+        
+        if(predLeader == leader)
+          continue;
+        
+        if(!predLeader.containsSuccessor(leader.getLabel())) {
+          predLeader.pointsTo(leader);
+        }
+      }
+      
+      node.clearPredecessors();
+      node.clearSuccessors();
+    }
+    
+    return ringleaders;
+  }
+  
+
+  /**
+   * This method does not account for any strongly connected components 
+   * in the input flowGraph. To avoid any issues due to SCCs (strongly 
+   * connected components) use the method {@link Algorithms.collapseStrongComponents} 
+   * to collapse the SCCs before calling this method. 
+   * @param flowGraph
+   * @return
+   */
+  public static <T> ArrayList<Node<T>> bottomUpTopologicalSort(Graph<T> flowGraph) {
+    validateGraph(flowGraph);
+    
+    ArrayList<Node<T>> topologicalSort = new ArrayList<>();
+    LinkedList<Node<T>> qu = new LinkedList<>(); 
+    
+    for(Node<T> node : flowGraph.getNodes()) {
+      if(node.pointsToNone()) {
+        qu.addLast(node);
+      }
+    }
+    
+    while(!qu.isEmpty()) {
+      Node<T> front = qu.removeFirst();
+      
+      if(front == null)
+        continue;
+      
+      topologicalSort.add(front);
+      
+      ArrayList<Node<T>> preds = front.getPredecessors();
+      front.clearPredecessors();
+      for(Node<T> pred : preds) {
+        if(pred.pointsToNone()) {
+          qu.addLast(pred);
+        }
+      }
+      
+    }
+    
+    return topologicalSort;
   }
   
   /**
@@ -86,14 +328,7 @@ public class Algorithms {
    * the input {@code flowgraph} is actually a forest.
    */
   public static <T> Graph<T> getDominatorTree(Graph<T> flowGraph) {
-    Preconditions.checkArgument(flowGraph != null, "flowgraph is null");
-    Preconditions.checkArgument(!flowGraph.getNodes().isEmpty(), "flowgraph is empty");
-    Preconditions.checkArgument(flowGraph.startNode() != null, "flowgraph's start is null");
-    Preconditions.checkArgument(flowGraph.endNode() != null, "flowgraph's end is null");
-    Preconditions.checkArgument(flowGraph.startNode().getSuccessorsSize() != 0, 
-        "flowgraph's start points to nothing");
-    Preconditions.checkArgument(flowGraph.startNode().getSuccessorsSize() != 0,
-        "flowgraph's end points to nothing");
+    validateGraph(flowGraph);
     
     Node<T> root = flowGraph.startNode();
     ArrayList<Node<T>> revPostOrder = traverseReversePostOrder(root);
@@ -141,10 +376,22 @@ public class Algorithms {
     
     return domTree;
   }
+
+  private static <T> void validateGraph(Graph<T> flowGraph) {
+    Preconditions.checkArgument(flowGraph != null, "flowgraph is null");
+    Preconditions.checkArgument(!flowGraph.getNodes().isEmpty(), "flowgraph is empty");
+    Preconditions.checkArgument(flowGraph.startNode() != null, "flowgraph's start is null");
+    Preconditions.checkArgument(flowGraph.endNode() != null, "flowgraph's end is null");
+    Preconditions.checkArgument(flowGraph.startNode().getSuccessorsSize() != 0, 
+        "flowgraph's start points to nothing");
+    Preconditions.checkArgument(flowGraph.startNode().getSuccessorsSize() != 0,
+        "nothing points to flowgraph's end");
+  }
   
   /**
    * Finds the lowest common ancestor for the input Nodes n1 and n2.
    * Assumes that the nodes are a part of the same TREE, not GRAPH.
+   * I.E., each node only as a single predecessor.
    * Given the TREE-assumption, while traversing parents of the nodes, it will
    * pick a node's first predecessor.
    * @param n1
@@ -159,30 +406,27 @@ public class Algorithms {
     Preconditions.checkState(n1 != null && n2 != null);
     Preconditions.checkState(n1.getContainerGraph() == n2.getContainerGraph());
     
-    Function<Node<T>, ArrayList<Node<T>>> getNtoRoot = (node) -> {
-      ArrayList<Node<T>> nToRoot = new ArrayList<>();
-      
-      nToRoot.add(node);
-      ArrayList<Node<T>> preds = node.getPredecessors();
-      
-      while(!preds.isEmpty()) {
-        Preconditions.checkState(preds.size() == 1);
-        Node<T> ptr = preds.get(0);
-        nToRoot.add(ptr);
-        preds = ptr.getPredecessors();
-      }
-      
-      return nToRoot;
-    };
+    ArrayList<Node<T>> n1ToRoot = new ArrayList<>();
+    ArrayList<Node<T>> n2ToRoot = new ArrayList<>();
     
+    for(Node<T> ptr = n1; ptr != null; ptr = ptr.getParentInTree()) {
+      if(ptr == n2)
+        return n2;
+      
+      n1ToRoot.add(ptr);
+    }
     
-    ArrayList<Node<T>> n1ToRoot = getNtoRoot.apply(n1);
-    ArrayList<Node<T>> n2ToRoot = getNtoRoot.apply(n2);
+    for(Node<T> ptr = n2; ptr != null; ptr = ptr.getParentInTree()) {
+      if(ptr == n1)
+        return n1;
+      
+      n2ToRoot.add(ptr);
+    }
     
     Node<T> lca = null;
     
-    int i = n1ToRoot.size() - 1, j = n2ToRoot.size() - 1;
-    for(;j >= 0 && i >= 0 && n1ToRoot.get(i) == n2ToRoot.get(j); 
+    for(int i = n1ToRoot.size() - 1, j = n2ToRoot.size() - 1;
+        j >= 0 && i >= 0 && n1ToRoot.get(i) == n2ToRoot.get(j); 
         i -= 1, j -= 1) {
       lca = n1ToRoot.get(i);
     }

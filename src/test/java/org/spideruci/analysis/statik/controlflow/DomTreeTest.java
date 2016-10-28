@@ -1,12 +1,14 @@
 package org.spideruci.analysis.statik.controlflow;
 
 import static org.junit.Assert.*;
+import static org.spideruci.jump.GraphAssertions.*;
 
 import java.util.function.BiConsumer;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.spideruci.jump.Graphs;
 
 public class DomTreeTest {
 
@@ -52,8 +54,7 @@ public class DomTreeTest {
   @Test
   public void endShouldPointToStartInGraphWithNoOtherNodes() {
     // given
-    Graph<Integer> flowGraph = Graph.create();
-    flowGraph.startNode().pointsTo(flowGraph.endNode());
+    Graph<Integer> flowGraph = Graphs.justStartAndEnd();
     
     System.out.println(flowGraph);
     
@@ -69,20 +70,7 @@ public class DomTreeTest {
   @Test
   public void testDomTreeForSimpleIfStructure() {
     // given
-    Graph<Integer> flowGraph = Graph.create();
-    flowGraph.startNode().pointsTo(flowGraph.endNode());
-    
-    Node<Integer> branch = Node.create("branch", flowGraph);
-    Node<Integer> then = Node.create("then", flowGraph);
-    Node<Integer> join = Node.create("join", flowGraph);
-    Node<Integer> next = Node.create("next", flowGraph);
-    flowGraph.nowHas(branch.and(then).and(join).and(next));
-    
-    flowGraph.startNode().pointsTo(branch);
-    branch.pointsTo(then.and(join));
-    then.pointsTo(join);
-    join.pointsTo(next);
-    next.pointsTo(flowGraph.endNode());
+    Graph<Integer> flowGraph = Graphs.simpleIfStructure();
     
     System.out.println(flowGraph);
     
@@ -105,22 +93,7 @@ public class DomTreeTest {
   @Test
   public void testDomTreeForSimpleIfElseStructure() {
     // given
-    Graph<Integer> flowGraph = Graph.create();
-    flowGraph.startNode().pointsTo(flowGraph.endNode());
-    
-    Node<Integer> branch = Node.create("branch", flowGraph);
-    Node<Integer> then = Node.create("then", flowGraph);
-    Node<Integer> elze = Node.create("else", flowGraph);
-    Node<Integer> join = Node.create("join", flowGraph);
-    Node<Integer> next = Node.create("next", flowGraph);
-    flowGraph.nowHas(branch.and(then).and(elze).and(join).and(next));
-    
-    flowGraph.startNode().pointsTo(branch);
-    branch.pointsTo(then.and(elze));
-    then.pointsTo(join);
-    elze.pointsTo(join);
-    join.pointsTo(next);
-    next.pointsTo(flowGraph.endNode());
+    Graph<Integer> flowGraph = Graphs.simpleIfElseStructure();
     
     System.out.println(flowGraph);
     
@@ -144,18 +117,7 @@ public class DomTreeTest {
   @Test
   public void testForSimpleLoopStructure() {
     // given
-    Graph<Integer> flowGraph = Graph.create();
-    flowGraph.startNode().pointsTo(flowGraph.endNode());
-    
-    Node<Integer> head = Node.create("head", flowGraph);
-    Node<Integer> body = Node.create("body", flowGraph);
-    Node<Integer> tail = Node.create("tail", flowGraph);
-    flowGraph.nowHas(head.and(body).and(tail));
-    
-    flowGraph.startNode().pointsTo(head);
-    head.pointsTo(body.and(tail));
-    body.pointsTo(head);
-    tail.pointsTo(flowGraph.endNode());
+    Graph<Integer> flowGraph = Graphs.simpleLoopStruture();
     
     System.out.println(flowGraph);
     
@@ -179,23 +141,7 @@ public class DomTreeTest {
   @Test
   public void testDomTreeFischerLectureExample() {
  // given
-    Graph<Integer> flowGraph = Graph.create("fischer");
-    
-    Node<Integer> a = Node.create("a", flowGraph);
-    Node<Integer> b = Node.create("b", flowGraph);
-    Node<Integer> c = Node.create("c", flowGraph);
-    Node<Integer> d = Node.create("d", flowGraph);
-    Node<Integer> e = Node.create("e", flowGraph);
-    Node<Integer> f = Node.create("f", flowGraph);
-    flowGraph.nowHas(a.and(b).and(c).and(d).and(e).and(f));
-    
-    flowGraph.startNode().pointsTo(a);
-    a.pointsTo(b.and(c));
-    b.pointsTo(d);
-    c.pointsTo(d);
-    d.pointsTo(e);
-    e.pointsTo(f);
-    f.pointsTo(flowGraph.endNode().and(e));
+    Graph<Integer> flowGraph = Graphs.fisher();
     
     System.out.println(flowGraph);
     
@@ -217,23 +163,7 @@ public class DomTreeTest {
   @Test
   public void testPostDomTreeFischerLectureExample() {
     // given
-    Graph<Integer> flowGraph = Graph.create("fischer");
-
-    Node<Integer> a = Node.create("a", flowGraph);
-    Node<Integer> b = Node.create("b", flowGraph);
-    Node<Integer> c = Node.create("c", flowGraph);
-    Node<Integer> d = Node.create("d", flowGraph);
-    Node<Integer> e = Node.create("e", flowGraph);
-    Node<Integer> f = Node.create("f", flowGraph);
-    flowGraph.nowHas(a.and(b).and(c).and(d).and(e).and(f));
-
-    flowGraph.startNode().pointsTo(a);
-    a.pointsTo(b.and(c));
-    b.pointsTo(d);
-    c.pointsTo(d);
-    d.pointsTo(e);
-    e.pointsTo(f);
-    f.pointsTo(flowGraph.endNode().and(e));
+    Graph<Integer> flowGraph = Graphs.fisher();
 
     Graph<Integer> revFlowGraph = flowGraph.reverseEdges();
     
@@ -254,14 +184,6 @@ public class DomTreeTest {
     assert1pointsTo2(Graph.END, "f", domTree);
   }
   
-  private <T> void assert1pointsTo2(String one, String two, Graph<T> domTree) {
-    assertTrue("Expceted: " + one +  "--->" + two, 
-        domTree.node(one).pointsTo().contains(domTree.node(two)));
-  };
-  
-  private <T> void assert1doesNotPointTo2(String one, String two, Graph<T> domTree) {
-    assertFalse("Expceted: " + one +  "-/->" + two,
-        domTree.node(one).pointsTo().contains(domTree.node(two)));
-  };
+
 
 }
