@@ -2,6 +2,7 @@ package org.spideruci.analysis.statik.controlflow;
 
 import java.util.ArrayList;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.spideruci.jump.Graphs;
 import org.spideruci.jump.Traversal;
@@ -32,6 +33,7 @@ public class BottomUpTopologicalSortTest {
     computeTopologyAndExpect(flow, expectedBottomUpTopology);
   }
   
+  @Ignore
   @Test
   public void testStartAndEndInACycle() {
     Graph<Integer> flow = Graphs.startAndEndWithACycle();

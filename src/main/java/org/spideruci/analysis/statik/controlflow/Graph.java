@@ -39,7 +39,7 @@ public class Graph<G> {
     graph.startNode = Node.<T>create(startLabel, graph);
     graph.endNode = Node.<T>create(endLabel, graph);
     graph.nowHas(graph.startNode.and(graph.endNode));
-    return graph;    
+    return graph;
   }
   
   private Graph() {
